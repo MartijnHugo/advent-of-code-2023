@@ -101,8 +101,6 @@ public:
     Round(std::string oneRoundSummary) {
         std::stringstream oneRoundStream(oneRoundSummary);
 
-        std::cout << oneRoundSummary << std::endl;
-
         for (std::string grab; std::getline(oneRoundStream, grab, ',');) {
             if (grab.find('d') != std::string::npos) {
                 red_ = std::stoi(grab.substr(grab.find(' ') + 1));
@@ -191,8 +189,8 @@ int main() {
         sum_power += game.power();
     }
 
-    std::cout << sum_ids << std::endl;
-    std::cout << "Power: " << sum_power << std::endl;
+    std::cout << "Answer part 1: " << sum_ids << std::endl;
+    std::cout << "Answer part 2: " << sum_power << std::endl;
 
     return 0;
 }

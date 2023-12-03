@@ -1,0 +1,1 @@
+ts-node .\src\3.ts

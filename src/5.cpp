@@ -149,6 +149,7 @@
 #include <vector>
 #include <algorithm>
 #include <iterator>
+#include <ranges>
 
 const std::string INPUT_FILE = "etc/5.txt";
 
@@ -171,7 +172,7 @@ class RangeMap
 public:
     RangeMap(uint32_t dest_start, uint32_t source_start, uint32_t length) : dest_start_(dest_start), source_start_(source_start), length_(length), source_end_(source_start + length - 1), shift_(dest_start - source_start) {}
 
-    bool inRange(uint32_t source)
+    bool inSourceRange(uint32_t source)
     {
         return source >= source_start_ && source < source_start_ + length_;
     }
@@ -182,6 +183,19 @@ public:
         uint32_t destination = dest_start_ + offset;
 
         return destination;
+    }
+
+    bool inDestRange(uint32_t destination)
+    {
+        return destination >= dest_start_ && destination < dest_start_ + length_;
+    }
+
+    uint32_t getSource(uint32_t destination)
+    {
+        uint32_t offset = destination - dest_start_;
+        uint32_t source = source_start_ + offset;
+
+        return source;
     }
 
     uint32_t getDestStart() { return dest_start_; }
@@ -236,7 +250,7 @@ public:
                 }
             }
             else if (line.find(":") != std::string::npos)
-            { // ":" in line
+            {
                 std::stringstream mapTitleLineStream(line);
                 std::getline(mapTitleLineStream, map_name, ' ');
                 maps[map_name] = {};
@@ -285,17 +299,6 @@ private:
     std::vector<std::string> map_order_;
 };
 
-std::vector<RangeMap> transform_map(std::vector<RangeMap> input_map, std::vector<RangeMap> transformation_map)
-{
-    std::vector<RangeMap> output_map;
-    for (RangeMap iMap : input_map)
-    {
-        for (RangeMap tMap : transformation_map)
-        {
-                }
-    }
-}
-
 int main()
 {
     std::ifstream file(INPUT_FILE);
@@ -303,36 +306,56 @@ int main()
 
     std::map<std::string, std::vector<RangeMap>> maps = almanac.getMaps();
     uint32_t value;
-    std::vector<uint32_t> locations_1 = {};
-    std::vector<uint32_t> locations_2 = {};
+    std::vector<uint32_t> locations = {};
+    uint32_t lowest_location;
 
     for (const uint32_t seed : almanac.getSeeds())
     {
         value = seed;
         for (const auto map_name : almanac.getMapOrder())
         {
-            std::sort(maps[map_name].begin(), maps[map_name].end(), [](RangeMap map1, RangeMap map2)
-                      { return map1.getSourceStart() < map2.getSourceStart(); });
             std::vector<RangeMap> map = maps[map_name];
 
             for (RangeMap rangeMap : map)
             {
-                if (rangeMap.inRange(value))
+                if (rangeMap.inSourceRange(value))
                 {
                     value = rangeMap.getDestination(value);
                     break;
                 }
             }
         }
-        locations_1.push_back(value);
+        locations.push_back(value);
     }
 
-    for (Range seedRange : almanac.getSeedRanges())
-    {
-        std::cout << "Seed range: " << seedRange.getStart() << " - " << seedRange.getEnd() << std::endl;
+    bool found = false;
+    for (uint32_t loc = 0; loc <= UINT32_MAX; loc++) {
+        if (found) break;
+        value = loc;
+        for (int i = almanac.getMapOrder().size() - 1; i >= 0; i--) {
+            std::string map_name = almanac.getMapOrder()[i];
+            std::vector<RangeMap> map = maps[map_name];
+            for (RangeMap tMap : map)
+            {
+                if (tMap.inDestRange(value))
+                {
+                    value = tMap.getSource(value);
+                    
+                    break;
+                }
+            }
+        }
+
+        for (Range seedRange : almanac.getSeedRanges()) {
+            if (value >= seedRange.getStart() && value < seedRange.getEnd()) {
+                lowest_location = loc;
+                found = true;
+                break;
+            }
+        }
     }
 
-    std::cout << "Answer part 1: " << *std::min_element(locations_1.begin(), locations_1.end()) << std::endl;
-    std::cout << "Answer part 2: " << *std::min_element(locations_2.begin(), locations_2.end()) << std::endl;
+    std::cout << "Answer part 1: " << *std::min_element(locations.begin(), locations.end()) << std::endl;
+    std::cout << "Answer part 2: " << lowest_location << std::endl;
     return 0;
 }
